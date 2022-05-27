@@ -22,8 +22,8 @@ import (
 
 	"github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample/internal/sdkutils"
 	"github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample/internal/utils"
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/netapp/mgmt/netapp"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/netapp/armnetapp"
 	"github.com/yelinaung/go-haikunator"
 )
 
@@ -49,8 +49,8 @@ var (
 	} // Multi-protocol is only supported with CIFS/NFSv3 combination at this time
 	dualProtocolVolumeName string = fmt.Sprintf("DualProtocol-Vol-%v", anfAccountName)
 	sampleTags                    = map[string]*string{
-		"Author":  to.StringPtr("ANF Go Dual Protocol (SMB/NFSv3) SDK Sample"),
-		"Service": to.StringPtr("Azure Netapp Files"),
+		"Author":  to.Ptr("ANF Go Dual Protocol (SMB/NFSv3) SDK Sample"),
+		"Service": to.Ptr("Azure Netapp Files"),
 	}
 
 	// SMB related variables
@@ -67,7 +67,6 @@ var (
 )
 
 func main() {
-
 	cntx := context.Background()
 
 	// Cleanup and exit handling
@@ -117,7 +116,7 @@ func main() {
 	utils.ConsoleOutput("Creating Azure NetApp Files account...")
 
 	// Building Active Directory List - please note that only one AD configuration is permitted per subscription and region
-	activeDirectories := []netapp.ActiveDirectory{
+	activeDirectories := []*armnetapp.ActiveDirectory{
 		{
 			DNS:           &dnsList,
 			Domain:        &adFQDN,
@@ -173,8 +172,8 @@ func main() {
 		false,
 		false,
 		sampleTags,
-		netapp.VolumePropertiesDataProtection{}, // This empty object is provided as nil since dataprotection is not scope of this sample
-		netapp.SecurityStyle("Ntfs"),
+		armnetapp.VolumePropertiesDataProtection{}, // This empty object is provided as nil since dataprotection is not scope of this sample
+		armnetapp.SecurityStyle("Ntfs"),
 	)
 
 	if err != nil {
@@ -186,7 +185,7 @@ func main() {
 	dualProtocolVolumeID = *dualProtocolVolume.ID
 	utils.ConsoleOutput(fmt.Sprintf("Dual Protocol volume successfully created, resource id: %v", dualProtocolVolumeID))
 
-	mountTargets := *dualProtocolVolume.MountTargets
+	mountTargets := dualProtocolVolume.Properties.MountTargets
 	utils.ConsoleOutput(fmt.Sprintf("\t====> SMB Server FQDN..: %v", *mountTargets[0].SmbServerFqdn))
 	utils.ConsoleOutput(fmt.Sprintf("\t====> NFS IP Address...: %v", *mountTargets[0].IPAddress))
 }
