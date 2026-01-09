@@ -7,7 +7,13 @@
 
 package models
 
-// AzureAuthInfo object definition
+// AzureAuthInfo object definition - retained for backwards compatibility
+// Note: With Track 2 SDK, authentication is handled via environment variables:
+// - AZURE_SUBSCRIPTION_ID
+// - AZURE_TENANT_ID
+// - AZURE_CLIENT_ID
+// - AZURE_CLIENT_SECRET
+// Or via other authentication methods supported by DefaultAzureCredential
 type AzureAuthInfo struct {
 	ClientID                       *string
 	ClientSecret                   *string
@@ -21,7 +27,7 @@ type AzureAuthInfo struct {
 	ManagementEndpointURL          *string
 }
 
-// AzureBasicInfo object definition
+// AzureBasicInfo object definition - retained for backwards compatibility
 type AzureBasicInfo struct {
 	SubscriptionID             *string
 	TenantID                   *string

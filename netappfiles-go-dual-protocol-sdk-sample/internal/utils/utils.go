@@ -8,14 +8,11 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"strings"
 	"syscall"
 
-	"github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample/internal/models"
 	"golang.org/x/term"
 )
 
@@ -48,18 +45,6 @@ func GetBytesInTiB(size uint64) uint32 {
 // GetTiBInBytes converts a value from tebibytes (TiB) to bytes
 func GetTiBInBytes(size uint32) uint64 {
 	return uint64(size * 1024 * 1024 * 1024 * 1024)
-}
-
-// ReadAzureBasicInfoJSON reads the Azure Authentication json file json file and unmarshals it.
-func ReadAzureBasicInfoJSON(path string) (*models.AzureBasicInfo, error) {
-	infoJSON, err := ioutil.ReadFile(path)
-	if err != nil {
-		fmt.Printf("failed to read file: %v", err)
-		return &models.AzureBasicInfo{}, err
-	}
-	var info models.AzureBasicInfo
-	json.Unmarshal(infoJSON, &info)
-	return &info, nil
 }
 
 // FindInSlice returns index greater than -1 and true if item is found

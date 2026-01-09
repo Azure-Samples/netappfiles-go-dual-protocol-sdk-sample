@@ -22,8 +22,8 @@ import (
 
 	"github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample/internal/sdkutils"
 	"github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample/internal/utils"
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/netapp/mgmt/netapp"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/netapp/armnetapp/v7"
 	"github.com/yelinaung/go-haikunator"
 )
 
@@ -49,8 +49,8 @@ var (
 	} // Multi-protocol is only supported with CIFS/NFSv3 combination at this time
 	dualProtocolVolumeName string = fmt.Sprintf("DualProtocol-Vol-%v", anfAccountName)
 	sampleTags                    = map[string]*string{
-		"Author":  to.StringPtr("ANF Go Dual Protocol (SMB/NFSv3) SDK Sample"),
-		"Service": to.StringPtr("Azure Netapp Files"),
+		"Author":  to.Ptr("ANF Go Dual Protocol (SMB/NFSv3) SDK Sample"),
+		"Service": to.Ptr("Azure Netapp Files"),
 	}
 
 	// SMB related variables
@@ -83,17 +83,17 @@ func main() {
 		return
 	}
 
-	// Getting subscription ID from authentication file
-	config, err := utils.ReadAzureBasicInfoJSON(os.Getenv("AZURE_AUTH_LOCATION"))
-	if err != nil {
-		utils.ConsoleOutput(fmt.Sprintf("an error ocurred getting non-sensitive info from AzureAuthFile: %v", err))
+	// Getting subscription ID from environment variable
+	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if subscriptionID == "" {
+		utils.ConsoleOutput("AZURE_SUBSCRIPTION_ID environment variable is not set")
 		exitCode = 1
 		return
 	}
 
 	// Checking if subnet exists before any other operation starts
 	subnetID := fmt.Sprintf("/subscriptions/%v/resourceGroups/%v/providers/Microsoft.Network/virtualNetworks/%v/subnets/%v",
-		*config.SubscriptionID,
+		subscriptionID,
 		vnetResourceGroupName,
 		vnetName,
 		subnetName,
@@ -101,7 +101,7 @@ func main() {
 
 	utils.ConsoleOutput(fmt.Sprintf("Checking if subnet %v exists.", subnetID))
 
-	_, err = sdkutils.GetResourceByID(cntx, subnetID, virtualNetworksAPIVersion)
+	_, err := sdkutils.GetResourceByID(cntx, subnetID, virtualNetworksAPIVersion)
 	if err != nil {
 		if string(err.Error()) == "NotFound" {
 			utils.ConsoleOutput(fmt.Sprintf("error: subnet %v not found: %v", subnetID, err))
@@ -117,13 +117,13 @@ func main() {
 	utils.ConsoleOutput("Creating Azure NetApp Files account...")
 
 	// Building Active Directory List - please note that only one AD configuration is permitted per subscription and region
-	activeDirectories := []netapp.ActiveDirectory{
+	activeDirectories := []*armnetapp.ActiveDirectory{
 		{
-			DNS:           &dnsList,
-			Domain:        &adFQDN,
-			Username:      &domainJoinUserName,
-			Password:      &domainJoinUserPassword,
-			SmbServerName: &smbServerNamePrefix,
+			DNS:           to.Ptr(dnsList),
+			Domain:        to.Ptr(adFQDN),
+			Username:      to.Ptr(domainJoinUserName),
+			Password:      to.Ptr(domainJoinUserPassword),
+			SmbServerName: to.Ptr(smbServerNamePrefix),
 		},
 	}
 
@@ -173,8 +173,8 @@ func main() {
 		false,
 		false,
 		sampleTags,
-		netapp.VolumePropertiesDataProtection{}, // This empty object is provided as nil since dataprotection is not scope of this sample
-		netapp.SecurityStyle("Ntfs"),
+		armnetapp.VolumePropertiesDataProtection{}, // This empty object is provided as nil since dataprotection is not scope of this sample
+		armnetapp.SecurityStyleNtfs,
 	)
 
 	if err != nil {
@@ -186,7 +186,7 @@ func main() {
 	dualProtocolVolumeID = *dualProtocolVolume.ID
 	utils.ConsoleOutput(fmt.Sprintf("Dual Protocol volume successfully created, resource id: %v", dualProtocolVolumeID))
 
-	mountTargets := *dualProtocolVolume.MountTargets
+	mountTargets := dualProtocolVolume.Properties.MountTargets
 	utils.ConsoleOutput(fmt.Sprintf("\t====> SMB Server FQDN..: %v", *mountTargets[0].SmbServerFqdn))
 	utils.ConsoleOutput(fmt.Sprintf("\t====> NFS IP Address...: %v", *mountTargets[0].IPAddress))
 }
