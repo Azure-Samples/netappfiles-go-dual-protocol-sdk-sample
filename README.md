@@ -11,7 +11,7 @@ description: "This project demonstrates how to create a dual protocol Volume (SM
 
 # Azure NetApp Files Dual Protocol SDK Sample for Go
 
-This project demonstrates how to create a dual protocol Volume (SMB+NFSv3) volumes using Microsoft.NetApp resource provider from Azure Go SDK. 
+This project demonstrates how to create a dual protocol Volume (SMB+NFSv3) volumes using Microsoft.NetApp resource provider from Azure Go SDK.
 
 In this sample application we perform the following operations:
 
@@ -28,7 +28,7 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
 
 ## Prerequisites
 
-1. Go installed \(if not installed yet, follow the [official instructions](https://golang.org/dl/)\).
+1. Go installed \(if not installed yet, follow the [official instructions](https://golang.org/dl/)\). Go 1.21 or later is required.
 2. Make sure you comply with the [dual-protocol considerations](https://docs.microsoft.com/en-us/azure/azure-netapp-files/create-volumes-dual-protocol#considerations) before you proceed.
 3. Azure Subscription.
 4. Subscription needs to have Azure NetApp Files resource provider registered. For more information, see [Register for NetApp Resource Provider](https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-register).
@@ -36,51 +36,59 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
 6. Virtual Network with a delegated subnet to Microsoft.Netapp/volumes resource. For more information, see [Guidelines for Azure NetApp Files network planning].(https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-network-topologies)
 7. Active Directory infrastructure setup with one or more DNS servers from the AD domain (usually the Domain Controllers) available in the **same virtual network** where you're setting up Azure NetApp Files. If you want to setup an Active Directory test environment, please refer to [Create a new Windows VM and create a new AD Forest, Domain and DC](https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/active-directory/active-directory-new-domain) for a quick setup, then you can create the subnet delegated to Microsoft.Netapp/volumes in the vnet that is created.
 8. Adjust variable contents within the `var()` block at `example.go` file to match your environment
-9. For this sample Go console application to work, authenticate is required.  The chosen method for this sample is service principals: 
-    * Within an [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/quickstart) session, make sure you're logged in from the subscription where you want to be associated with the service principal by default: 
+9. For this sample Go console application to work, authentication is required. This sample uses the Azure Identity library's `DefaultAzureCredential` which supports multiple authentication methods. The simplest approach for local development is using environment variables for a service principal:
+
+    * Within an [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/quickstart) session, make sure you're logged in from the subscription where you want to be associated with the service principal by default:
 
       ```bash
       az account show
       ```
 
-      If this is not the correct subscription, use: 
+      If this is not the correct subscription, use:
 
       ```bash
-      az account set -s <subscription name or id>  
+      az account set -s <subscription name or id>
       ```
 
-    * Create a service principal using Azure CLI: 
+    * Create a service principal using Azure CLI:
 
       ```bash
-      az ad sp create-for-rbac --sdk-auth
+      az ad sp create-for-rbac --name "netappfiles-go-sample"
       ```
 
-      >Note: this command will automatically assign RBAC contributor role to the service principal at subscription level. You can narrow down the scope to the specific resource group where your tests will create the resources.
+      >Note: You may need to assign the appropriate RBAC role (e.g., Contributor) to the service principal at the subscription or resource group level where your tests will create the resources.
 
-    * Copy the output content, paste it in a file called azureauth.json, and secure it with file system permissions. (Make sure it is not inside of any repo).  
-    * Set an environment variable pointing to the file path you just created. The following example uses Powershell and bash:
+    * Set the following environment variables using the output from the service principal creation. The following example uses PowerShell and Bash:
 
-      Powershell
+      PowerShell
 
       ```powershell
-      [Environment]::SetEnvironmentVariable("AZURE_AUTH_LOCATION", "C:\sdksample\azureauth.json", "User")
+      $env:AZURE_SUBSCRIPTION_ID = "<your-subscription-id>"
+      $env:AZURE_TENANT_ID = "<your-tenant-id>"
+      $env:AZURE_CLIENT_ID = "<your-app-id>"
+      $env:AZURE_CLIENT_SECRET = "<your-client-secret>"
       ```
 
       Bash
 
       ```bash
-      export AZURE_AUTH_LOCATION=/sdksamples/azureauth.json
+      export AZURE_SUBSCRIPTION_ID="<your-subscription-id>"
+      export AZURE_TENANT_ID="<your-tenant-id>"
+      export AZURE_CLIENT_ID="<your-app-id>"
+      export AZURE_CLIENT_SECRET="<your-client-secret>"
       ```
 
-    >Note: for other Azure Active Directory authentication methods for Go, see [Authentication methods in the Azure SDK for Go](https://docs.microsoft.com/en-us/azure/go/azure-sdk-go-authorization).
+    >Note: `DefaultAzureCredential` supports multiple authentication methods including environment variables, managed identity, Azure CLI, and more. For other authentication methods, see [Azure Identity client library for Go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity).
 
 ## What does example.go do
 
-This sample project demonstrates how to create a dual-protocol enabled volume (SMB and NFSv3). The authentication method is based on a service principal.  This project creates one NetApp account with an Active Directory object, one capacity pool, and a single dual-protocol (SMB and NFSv3) volume using the Standard service level. When executing this application, the user will be prompted to provide the password for the Active Directory User that has the permissions to domain join computers in AD.
+This sample project demonstrates how to create a dual-protocol enabled volume (SMB and NFSv3) using the Azure SDK for Go (Track 2). The authentication method is based on `DefaultAzureCredential` from the Azure Identity library, which supports multiple authentication methods including service principals via environment variables.
 
-In addition, we use some non-sensitive information from the *file-based authentication* file where we get the subscription ID initially. This information is used for the test we perform to check if the subnet provided exists before creating any Azure NetApp Files resources, failing execution if they're missing.
+This project creates one NetApp account with an Active Directory object, one capacity pool, and a single dual-protocol (SMB and NFSv3) volume using the Standard service level. When executing this application, the user will be prompted to provide the password for the Active Directory User that has the permissions to domain join computers in AD.
 
-Authentication is made on each operation where we obtain an authorizer to pass to each client we instantiate. (In Azure Go SDK for Azure NetApp Files, each resource has its own client). For more information about the authentication process used, see the [Use file-based authentication](https://docs.microsoft.com/en-us/azure/go/azure-sdk-go-authorization#use-file-based-authentication) section of [Authentication methods in the Azure SDK for Go](https://docs.microsoft.com/en-us/azure/go/azure-sdk-go-authorization).
+The subscription ID is obtained from the `AZURE_SUBSCRIPTION_ID` environment variable. This information is used for the test we perform to check if the subnet provided exists before creating any Azure NetApp Files resources, failing execution if they're missing.
+
+Authentication is made on each operation where we obtain a credential to pass to each client we instantiate. (In Azure SDK for Go for Azure NetApp Files, each resource has its own client). For more information about the authentication process used, see [Azure Identity client library for Go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity).
 
 Lastly, the clean-up process takes place. (This process is not enabled by default; you need to change the variable `shouldCleanUp` to `true` at `example.go` file `var()` section to enable it).  It deletes all resources in the reverse order following the hierarchy; otherwise, resources that have nested resources cannot be removed. If there is an error during the application execution, the clean-up process might not take place, and you need to manually perform this task.
 The clean-up process uses a function called `WaitForNoANFResource`, while other parts of the code uses `WaitForANFResource`. Currently, this behavior is required as a workaround for the current ARM behavior of reporting that the object was deleted when in fact its deletion is still in progress.  (Similarly, ARM states that volume is fully created, while this is still completing.)  Also, we will see functions called `GetANF<resource type>`. These functions were created in this sample to be able to get the name of the resource without its hierarchy represented in the `<resource type>.name` property, which cannot be used directly in other methods of Azure NetApp Files client like `get`.
@@ -100,8 +108,8 @@ The clean-up process uses a function called `WaitForNoANFResource`, while other 
 | `netappfiles-go-dual-protocol-sdk-sample\go.mod`            |The go.mod file defines the module’s module path, which is also the import path used for the root directory, and its dependency requirements, which are the other modules needed for a successful build.|
 | `netappfiles-go-dual-protocol-sdk-sample\go.sum`            | The go.sum file contains hashes for each of the modules and it's versions used in this sample|
 | `netappfiles-go-dual-protocol-sdk-sample\internal\`       | Folder that contains all internal packages dedicated to this sample.                |
-| `netappfiles-go-dual-protocol-sdk-sample\internal\iam\iam.go` | Package that allows us to get the `authorizer` object from Azure Active Directory by using the `NewAuthorizerFromFile` function. |
-| `netappfiles-go-dual-protocol-sdk-sample\internal\models\models.go`       | Provides models for this sample, e.g. `AzureAuthInfo` models the authorization file.                   |
+| `netappfiles-go-dual-protocol-sdk-sample\internal\iam\iam.go` | Package that allows us to get the Azure credential using the `DefaultAzureCredential` from Azure Identity library. |
+| `netappfiles-go-dual-protocol-sdk-sample\internal\models\models.go`       | Provides models for this sample.                   |
 | `netappfiles-go-dual-protocol-sdk-sample\internal\sdkutils\sdkutils.go`       | Contains all functions that directly uses the SDK and some helper functions.                   |
 | `netappfiles-go-dual-protocol-sdk-sample\internal\uri\uri.go`       | Provides various functions to parse resource IDs and get information or perform validations.                   |
 | `netappfiles-go-dual-protocol-sdk-sample\internal\utils\utils.go`       | Provides generic functions.                   |
@@ -113,7 +121,7 @@ The clean-up process uses a function called `WaitForNoANFResource`, while other 
 
 ## How to run
 
-1. Go to your GOPATH folder and create the following path: 
+1. Go to your GOPATH folder and create the following path:
     ```powershell
     # PowerShell example
     cd $env:GOPATH/src
@@ -125,18 +133,22 @@ The clean-up process uses a function called `WaitForNoANFResource`, while other 
     cd $GOPATH/src
     mkdir -p ./github.com/Azure-Samples
     ```
-2. Clone the sample locally: 
+2. Clone the sample locally:
     ```bash
     cd github.com/Azure-Samples
     git clone https://github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample.git
     ```
-3. Change folder to **netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample**: 
+3. Change folder to **netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample**:
     ```bash
     cd netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample
     ```
-4. Make sure you have the `azureauth.json` and its environment variable with the path to it defined (as previously described at [prerequisites](#Prerequisites)). 
-6. Edit the **example.go** `var()` file lock and change the variables contents as appropriate (names are self-explanatory).
-7. Run the sample: 
+4. Make sure you have the required environment variables set (as previously described at [prerequisites](#Prerequisites)):
+   - `AZURE_SUBSCRIPTION_ID`
+   - `AZURE_TENANT_ID`
+   - `AZURE_CLIENT_ID`
+   - `AZURE_CLIENT_SECRET`
+5. Edit the **example.go** `var()` file lock and change the variables contents as appropriate (names are self-explanatory).
+7. Run the sample:
     ```bash
     go run .
     ```
@@ -148,9 +160,9 @@ Sample output
 
 * [Create a dual-protocol (NFSv3 and SMB) volume for Azure NetApp Files](https://docs.microsoft.com/en-us/azure/azure-netapp-files/create-volumes-dual-protocol)
 * [Troubleshoot dual-protocol volumes](https://docs.microsoft.com/en-us/azure/azure-netapp-files/troubleshoot-dual-protocol-volumes)
-* [Authentication methods in the Azure SDK for Go](https://docs.microsoft.com/en-us/azure/go/azure-sdk-go-authorization)
-* [Azure SDK for Go Samples](https://github.com/Azure-Samples/azure-sdk-for-go-samples) - contains other resource types samples
+* [Azure Identity client library for Go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity)
+* [Azure SDK for Go](https://github.com/Azure/azure-sdk-for-go)
+* [Azure NetApp Files ARM SDK for Go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/netapp/armnetapp/v7)
 * [Resource limits for Azure NetApp Files](https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-resource-limits)
 * [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/quickstart)
 * [Azure NetApp Files documentation](https://docs.microsoft.com/en-us/azure/azure-netapp-files/)
-* [Azure SDK for Go](https://github.com/Azure/azure-sdk-for-go)
