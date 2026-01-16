@@ -23,7 +23,7 @@ import (
 	"github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample/internal/sdkutils"
 	"github.com/Azure-Samples/netappfiles-go-dual-protocol-sdk-sample/netappfiles-go-dual-protocol-sdk-sample/internal/utils"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/netapp/armnetapp/v7"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/netapp/armnetapp/v8"
 	"github.com/yelinaung/go-haikunator"
 )
 
